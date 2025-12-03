@@ -1,3 +1,5 @@
+import random
+
 def read_money():
     try:
         with open("money.txt", "r") as file:
@@ -31,10 +33,30 @@ def create_deck():
             deck.append(card)
     return deck
 
+def deal_cards(deck):
+    random.shuffle(deck)
+    player_hand = []
+    dealer_hand = []
+    for i in range(2):
+        player_hand.append(deck.pop())
+        dealer_hand.append(deck.pop())
+    return player_hand, dealer_hand
+        
+def play_round(money, player_hand, dealer_hand):
+    print(f"Money: {money:.2f}")
+    bet_amount = float(input("Bet amount: "))
+    print("\nDEALER'S SHOW CARD")
+    print(f"{dealer_hand[0][1]} of {dealer_hand[0][0]}")
+    print("\nYOUR CARDS:")
+    for i in range(2):
+        print(f"{player_hand[i][1]} of {player_hand[i][0]}")
+
 def main():
     display_title()
     money = read_money()
-    write_money(money)
+    deck = create_deck()
+    player_hand, dealer_hand = deal_cards(deck)
+    play_round(money, player_hand, dealer_hand)
     
 if __name__ == "__main__":
     main()
