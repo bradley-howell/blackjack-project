@@ -3,11 +3,16 @@ def read_money():
         with open("money.txt", "r") as file:
             money = float(file.readline())
     except FileNotFoundError:
-        return 0
+        money = 100
+    return money
 
 def write_money(money):
     with open("money.txt", "w") as file:
         file.write(str(money))
+
+def display_title():
+    print("BLACKJACK!")
+    print("Blacjack payout is 3:2\n")
 
 def create_deck():
     suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
@@ -27,9 +32,9 @@ def create_deck():
     return deck
 
 def main():
-    deck = create_deck()
-    for card in deck:
-        print(card)
+    display_title()
+    money = read_money()
+    write_money(money)
     
 if __name__ == "__main__":
     main()
