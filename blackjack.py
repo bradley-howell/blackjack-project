@@ -14,7 +14,7 @@ def write_money(money):
 
 def display_title():
     print("BLACKJACK!")
-    print("Blacjack payout is 3:2\n")
+    print("Blackjack payout is 3:2\n")
 
 def create_deck():
     suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
@@ -24,7 +24,7 @@ def create_deck():
     for suit in suits:
         for rank in ranks:
             if rank == "Ace":
-                value = None
+                value = 11
             elif rank in ["King", "Queen", "Jack"]:
                 value = 10
             else:
@@ -41,22 +41,88 @@ def deal_cards(deck):
         player_hand.append(deck.pop())
         dealer_hand.append(deck.pop())
     return player_hand, dealer_hand
-        
-def play_round(money, player_hand, dealer_hand):
+
+def calculate_points(hand):
+    return sum([card[2] for card in hand])
+
+def set_ace_value(hand):
+    for card in hand:
+        if card[1] == "Ace":
+            points = calculate_points(hand)
+            if points > 21:
+                card[2] = 1
+            else:
+                ace_value = input("Choose a value for the ace: ")
+                card[2] = ace_value
+    return hand
+
+def print_show_card(hand):
+    print("\nDEALER'S SHOW CARD")
+    print(f"{hand[0][1]} of {hand[0][0]}")
+
+def print_cards(hand):
+    for card in hand:
+        print(f"{card[1]} of {card[0]}")
+    print()
+
+def get_valid_choice():
+    while True:
+        player_choice = input("Hit or stand (hit/stand): ").lower()
+        if player_choice in ["hit", "stand"]:
+            return player_choice
+        else:
+            print("Invalid choice.")
+            
+def play_round(money, deck):
     print(f"Money: {money:.2f}")
     bet_amount = float(input("Bet amount: "))
-    print("\nDEALER'S SHOW CARD")
-    print(f"{dealer_hand[0][1]} of {dealer_hand[0][0]}")
+    player_hand, dealer_hand = deal_cards(deck)
+    print_show_card(dealer_hand)
     print("\nYOUR CARDS:")
-    for i in range(2):
-        print(f"{player_hand[i][1]} of {player_hand[i][0]}")
+    print_cards(player_hand)
+    player_hand = set_ace_value(player_hand)
+    dealer_hand = set_ace_value(dealer_hand)
+    player_points = calculate_points(player_hand)
+    dealer_points = calculate_points(dealer_hand)
+    
+    while player_points <= 21:
+        player_choice = get_valid_choice()
+        if player_choice == "hit":
+            player_hand.append(deck.pop())
+            print("\nYOUR CARDS:")
+            print_cards(player_hand)
+            player_hand = set_ace_value(player_hand)
+            player_points = calculate_points(player_hand)
+            if player_points > 21:
+                print("\nSorry. You lose.")
+                money -= bet_amount
+        else:
+            break
 
+    if player_points <= 21:
+        print("\nDEALER'S CARDS:")
+        print_cards(dealer_hand)
+        
+        print(f"YOUR POINTS:     {player_points}")
+        print(f"DEALER'S POINTS: {dealer_points}")
+        if dealer_points < player_points or dealer_points > 21:
+            print("\nYou win!")
+            money += bet_amount
+        elif dealer_points == player_points:
+            print("\nIt's a tie.")
+        else:
+            print("\nSorry. You lose.")
+            money -= bet_amount
+
+    write_money(money)
+    print(f"Money: {money:.2f}")
+        
 def main():
     display_title()
+    
     money = read_money()
     deck = create_deck()
-    player_hand, dealer_hand = deal_cards(deck)
-    play_round(money, player_hand, dealer_hand)
+    play_round(money, deck)
     
 if __name__ == "__main__":
     main()
