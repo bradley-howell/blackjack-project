@@ -1,16 +1,5 @@
 import random
-
-def read_money():
-    try:
-        with open("money.txt", "r") as file:
-            money = float(file.readline())
-    except FileNotFoundError:
-        money = 100
-    return money
-
-def write_money(money):
-    with open("money.txt", "w") as file:
-        file.write(str(money))
+import db
 
 def display_title():
     print("BLACKJACK!")
@@ -52,8 +41,9 @@ def set_ace_value(hand):
             if points > 21:
                 card[2] = 1
             else:
-                ace_value = input("Choose a value for the ace: ")
-                card[2] = ace_value
+                while (ace_value := input("Choose a value for the ace (1/11): ")) not in ["1", "11"]:
+                    print("Invalid value.")
+                card[2] = int(ace_value)
     return hand
 
 def print_show_card(hand):
@@ -99,7 +89,14 @@ def play_round(money, deck):
         else:
             break
 
-    if player_points <= 21:
+    if player_points == 21:
+        if dealer_points != 21:
+            print("\nBlackjack!")
+            money += 1.5 * bet
+        elif dealer_points == 21:
+            print("\nIt's a tie.")
+        
+    if player_points < 21:
         print("\nDEALER'S CARDS:")
         print_cards(dealer_hand)
         
@@ -114,15 +111,18 @@ def play_round(money, deck):
             print("\nSorry. You lose.")
             money -= bet_amount
 
-    write_money(money)
+    db.write_money(money)
     print(f"Money: {money:.2f}")
         
 def main():
     display_title()
     
-    money = read_money()
-    deck = create_deck()
-    play_round(money, deck)
+    #money = db.read_money()
+    #deck = create_deck()
+    #play_round(money, deck)
+
+    hand = set_ace_value([["Spades", "Ace", 11]])
+    print(hand)
     
 if __name__ == "__main__":
     main()
