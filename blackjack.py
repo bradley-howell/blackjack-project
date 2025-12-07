@@ -1,56 +1,11 @@
-import random
+import sys
 import db
+import cards
+import printing as p
 
-def display_title():
-    print("BLACKJACK!")
-    print("Blackjack payout is 3:2")
-
-def create_deck():
-    suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
-    ranks = ["Ace", "King", "Queen", "Jack", "10",
-             "9", "8", "7", "6", "5", "4", "3", "2"]
-    deck = []
-    for suit in suits:
-        for rank in ranks:
-            if rank == "Ace":
-                value = 11
-            elif rank in ["King", "Queen", "Jack"]:
-                value = 10
-            else:
-                value = int(rank)
-            card = [suit, rank, value]
-            deck.append(card)
-    return deck
-
-def deal_cards(deck):
-    random.shuffle(deck)
-    player_hand = []
-    dealer_hand = []
-    for i in range(2):
-        player_hand.append(deck.pop())
-        dealer_hand.append(deck.pop())
-    return player_hand, dealer_hand
-
-def calculate_points(hand):
-    return sum([card[2] for card in hand])
-
-def set_ace_value(card, points):
-    if points > 21:
-        card[2] = 1
-    else:
-        while (ace_value := input("Choose a value for the ace (1/11): ")) not in ["1", "11"]:
-            print("Invalid value.")
-        card[2] = int(ace_value)
-    return card
-
-def print_show_card(hand):
-    print("\nDEALER'S SHOW CARD")
-    print(f"{hand[0][1]} of {hand[0][0]}")
-
-def print_cards(hand):
-    for card in hand:
-        print(f"{card[1]} of {card[0]}")
-    print()
+def exit_progam():
+    print("Exiting program. Bye!")
+    sys.exit()
 
 def get_valid_choice():
     while True:
@@ -58,79 +13,117 @@ def get_valid_choice():
         if player_choice in ["hit", "stand"]:
             return player_choice
         else:
-            print("Invalid choice.")
+            p.print_invalid_input()
+
+def buy_chips():
+    choice = input("Would you like to buy more chips? (y/n): ").lower()
+    if choice == "y":
+        while True:
+            try:
+                money = int(input("Enter the number of chips you would like to buy: "))
+                if money < 5:
+                    p.print_chips_message()
+                    continue
+                else:
+                    print()
+                    db.write_money(money)
+                    return money
+            except ValueError:
+                p.print_invalid_input()
+    else:
+        exit_progam()
+
+def get_bet_amount(money):
+    while True:
+        try:
+            bet_amount = float(input("Bet amount: "))
+            if 5 <= bet_amount <= min(1000, money):
+                return bet_amount
+            else:
+                p.print_bet_message()
+        except ValueError:
+            p.print_invalid_input()
             
 def play_round(money, deck):
-    print(f"\nMoney: {money:.2f}")
-    bet_amount = float(input("Bet amount: "))
-    player_hand, dealer_hand = deal_cards(deck)
-    print_show_card(dealer_hand)
-    print("\nYOUR CARDS:")
-    print_cards(player_hand)
+    p.print_money(money)
+    bet_amount = get_bet_amount(money)
+    player_hand, dealer_hand = cards.deal_cards(deck)
+    p.print_show_card(dealer_hand)
+    p.print_cards(player_hand, player = True)
 
-    player_points = calculate_points(player_hand)
+    player_points = cards.calculate_points(player_hand)
     for card in player_hand:
+        # Index 1 corresponds to card rank
         if card[1] == "Ace":
-            card = set_ace_value(card, player_points)
-            player_points = calculate_points(player_hand)
+            card = cards.set_ace_value(card, player_points)
+            # Recalculate points after setting ace value
+            player_points = cards.calculate_points(player_hand)
     
     while player_points <= 21:
         player_choice = get_valid_choice()
         if player_choice == "hit":
             draw = deck.pop()
             player_hand.append(draw)
-            print("\nYOUR CARDS:")
-            print_cards(player_hand)
-            player_points = calculate_points(player_hand)
+            p.print_cards(player_hand, player = True)
+            player_points = cards.calculate_points(player_hand)
             if draw[1] == "Ace":
-                set_ace_value(draw, player_points)
-                player_points = calculate_points(player_hand)
+                # Updating the draw variable also updates player_hand
+                draw = cards.set_ace_value(draw, player_points)
+                # Recalculate points after setting ace value
+                player_points = cards.calculate_points(player_hand)
             if player_points > 21:
-                print(f"YOUR POINTS: {player_points}")
-                print("\nBust.")
+                p.print_points(player_points, player = True)
+                print("Bust.")
                 money -= bet_amount
                 db.write_money(money)
-                print(f"Money: {money:.2f}\n")
+                p.print_money(money)
+                # Remaining code is not executed because round is over
                 return
         else:
+            # Remaining code is executed because choice is "stand"
             break
 
-    while (dealer_points := calculate_points(dealer_hand)) < 17:
+    # Dealer's turn
+    while (dealer_points := cards.calculate_points(dealer_hand)) < 17:
+        # Continue drawing cards until dealer_points >= 17
         dealer_hand.append(deck.pop())
 
-    print("\nDEALER'S CARDS:")
-    print_cards(dealer_hand)
-        
-    print(f"YOUR POINTS:     {player_points}")
-    print(f"DEALER'S POINTS: {dealer_points}")
+    p.print_cards(dealer_hand, dealer = True)
+    p.print_points(player_points, dealer_points, player = True, dealer = True)
 
     if player_points == dealer_points:
-        print("\nIt's a tie.")      
+        print("It's a tie.")      
     elif player_points == 21:
-        print("\nBlackjack!")
+        # Already checked that it's not a tie
+        print("Blackjack!")
         money += 1.5 * bet_amount   
     elif dealer_points < player_points or dealer_points > 21:
-        print("\nYou win!")
+        print("You win!")
         money += bet_amount
     else:
-        print("\nSorry. You lose.")
+        # Only remaining case is player_points < dealer_points <= 21
+        print("Sorry. You lose.")
         money -= bet_amount
 
     db.write_money(money)
-    print(f"Money: {money:.2f}\n")
+    p.print_money(money)
         
 def main():
-    display_title()
-    deck = create_deck()
+    p.print_title()
 
     while True:
         money = db.read_money()
+        if money < 5:
+            money = buy_chips()
+        # New deck is initialized for every round
+        deck = cards.create_deck()
         play_round(money, deck)
-        if (again := input("Play again? (y/n): ").lower()) != "y":
+        if (again := input("\nPlay again? (y/n): ").lower()) != "y":
             break
-
-    print("\nCome back soon!")
-    print("Bye!")
+        else:
+            print()
+        
+    p.print_bye()
     
 if __name__ == "__main__":
     main()
