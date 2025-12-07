@@ -1,5 +1,5 @@
 import random
-import printing
+import printing as p
 
 def create_deck():
     suits = ["Clubs", "Diamonds", "Hearts", "Spades"]
