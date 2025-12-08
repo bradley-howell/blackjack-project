@@ -38,7 +38,7 @@ def set_ace_value(card, points):
     else:
         # Exception handling is not necessary here since the while loop condition forces ace_value to be either "1" or "11"
         while (ace_value := input("Choose a value for the ace (1/11): ")) not in ["1", "11"]:
-            p.print_invalid_value()
+            p.print_invalid_input()
         card[2] = int(ace_value)
         print()
     return card
